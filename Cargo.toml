@@ -1,0 +1,16 @@
+[package]
+name = "depth-recorder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nb = "1"
+embedded-hal = { version = "0.2.2", features = ["unproven"] }
+ads1x1x = "0.2.2"
+linux-embedded-hal = "0.3"
+clap = { version = "=4.0.0", features = ["derive"] }
+csv = "1.3.0"
+log = "0.4.20"
+serde = { version = "1.0.188", features = ["derive"] }
+chrono = { version = "0.4.19", features = ["serde"] }
+env_logger = "0.10.0"
