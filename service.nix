@@ -31,6 +31,7 @@ in {
       script = ''
         #!/usr/bin/env bash
         set -x
+        ${pkgs.coreutils}/bin/mkdir -p ${config.services.depth-recorder.output-path}
         ${depthRecorder}/bin/depth-recorder \
         ${config.services.depth-recorder.output-path} \
         ${toString config.services.depth-recorder.interval-secs}
