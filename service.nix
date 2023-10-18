@@ -40,6 +40,9 @@ in {
         User = "root";
         Restart = "always";
       };
+      unitConfig = {
+        After = "multi-user.target";
+      };
     };
   };
 }
