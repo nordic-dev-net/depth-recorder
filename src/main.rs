@@ -3,10 +3,10 @@ use chrono::prelude::*;
 use clap::Parser;
 use embedded_hal::adc::OneShot;
 use linux_embedded_hal::I2cdev;
-use log::{info};
+use log::info;
 use nb::block;
 use serde::{Deserialize, Serialize};
-use std::fs::{OpenOptions, File};
+use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 use std::thread::sleep;
 
@@ -25,29 +25,38 @@ struct Cli {
 #[derive(Serialize, Deserialize)]
 struct DepthData {
     timestamp: DateTime<Utc>,
+    adc: i16,
     voltage: f32,
-    pressure: f32,
-    depth: f32,
+    pressure_psi: f32,
+    depth_meters: f32,
 }
 
-fn calculate_depth(voltage: i16) -> (f32, f32, f32) {
+fn calculate_depth(adc_value: i16) -> (f32, f32, f32) {
     // ADS1015 has 12-bit resolution, giving value range of [-2048,2047]
     // with ads1x1x crate in singleshot mode
-    let input_range_start: i16 = -2048;
-    let input_range_end: i16 = 2047;
+
     // Map ADC value to voltage in range 0-3.3V
-    let output_range_start: f32 = 0.0;
-    let output_range_end: f32 = 3.3;
-    let mapped_voltage = (voltage - input_range_start) as f32
-        * (output_range_end - output_range_start)
-        / (input_range_end - input_range_start) as f32;
-    // TODO: implement mapping from voltage to pressure
-    let mapped_pressure = mapped_voltage;
-    // TODO: implement mapping from pressure to depth
+    let adc_range_start: i16 = -2048;
+    let adc_range_end: i16 = 2047;
+    let voltage_range_start: f32 = 0.0;
+    let voltage_range_end: f32 = 3.3;
+    let mapped_voltage = (adc_value - adc_range_start) as f32
+        * (voltage_range_end - voltage_range_start)
+        / (adc_range_end - adc_range_start) as f32;
+
+    // Map voltage in range 0-3.3V to pressure in range 0-100psi
+    let pressure_range_start: f32 = 0.0;
+    let pressure_range_end: f32 = 100.0;
+    let mapped_pressure_psi = (mapped_voltage - voltage_range_start)
+        * (pressure_range_end - pressure_range_start)
+        / (voltage_range_end - voltage_range_start);
+
+    // Convert pressure from psi to Pa, then calculate depth
+    let pressure_pascal = mapped_pressure_psi * 689.47573;
     let saltwater_density = 1023.6;
     let gravity = 9.80665;
-    let depth = mapped_pressure / (saltwater_density * gravity);
-    return (mapped_voltage, mapped_pressure, depth);
+    let depth = pressure_pascal / (saltwater_density * gravity);
+    return (mapped_voltage, mapped_pressure_psi, depth);
 }
 
 fn init_csv_writer(output_path: PathBuf) -> csv::Writer<File> {
@@ -86,12 +95,15 @@ fn main() {
             "ADC value: {}, converted voltage: {}, calculated pressure: {}, calculated depth: {}",
             value, voltage, pressure, depth
         );
-        let _ = writer.serialize(DepthData {
-            timestamp: Utc::now(),
-            voltage: voltage,
-            pressure: pressure,
-            depth: depth,
-        }).expect("Failed to serialize and write data to file");
+        let _ = writer
+            .serialize(DepthData {
+                timestamp: Utc::now(),
+                adc: value,
+                voltage: voltage,
+                pressure_psi: pressure,
+                depth_meters: depth,
+            })
+            .expect("Failed to serialize and write data to file");
         writer.flush().expect("Failed to flush writer");
         sleep(std::time::Duration::from_secs(interval));
     }
