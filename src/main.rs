@@ -25,7 +25,7 @@ struct Cli {
 #[derive(Serialize, Deserialize)]
 struct DepthData {
     timestamp: DateTime<Utc>,
-    adc: i16,
+    adc_value: i16,
     voltage: f32,
     pressure_psi: f32,
     depth_meters: f32,
@@ -89,24 +89,22 @@ fn main() {
     let address = SlaveAddr::default(); // default address 0x48
     let mut adc = Ads1x1x::new_ads1015(dev, address);
     loop {
-        let value = block!(adc.read(&mut channel::SingleA0)).expect("Failed to read ADC");
-        let (voltage, pressure, depth) = calculate_depth(value);
+        let adc_value = block!(adc.read(&mut channel::SingleA0)).expect("Failed to read ADC");
+        let (voltage, pressure_psi, depth_meters) = calculate_depth(adc_value);
         info!(
             "ADC value: {}, converted voltage: {}, calculated pressure: {}, calculated depth: {}",
-            value, voltage, pressure, depth
+            adc_value, voltage, pressure_psi, depth_meters
         );
-        let _ = writer
+        writer
             .serialize(DepthData {
                 timestamp: Utc::now(),
-                adc: value,
-                voltage: voltage,
-                pressure_psi: pressure,
-                depth_meters: depth,
+                adc_value,
+                voltage,
+                pressure_psi,
+                depth_meters,
             })
             .expect("Failed to serialize and write data to file");
         writer.flush().expect("Failed to flush writer");
         sleep(std::time::Duration::from_secs(interval));
     }
-    // get I2C device back
-    let _dev = adc.destroy_ads1015();
 }
