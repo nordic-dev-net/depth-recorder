@@ -43,6 +43,7 @@ in {
       unitConfig = {
         After = "multi-user.target";
       };
+      startLimitIntervalSec = 0;
     };
   };
 }
