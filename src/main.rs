@@ -60,7 +60,7 @@ fn calculate_depth(adc_value: i16) -> (f32, f32, f32) {
 }
 
 fn init_csv_writer(output_path: PathBuf) -> csv::Writer<File> {
-    let filename = format!("{}_depth_data.csv", Utc::now().format("%Y-%m-%dT%H-%M-%S"));
+    let filename = format!("{}_depth_data.csv", Utc::now().format("%Y-%m-%dT%H_%M_%S%z"));
     let file_path = output_path.join(filename);
     info!("Writing depth data to {}", file_path.display());
     let file = OpenOptions::new()
