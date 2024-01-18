@@ -10,7 +10,7 @@ in {
     services.depth-recorder = {
       enable = lib.mkEnableOption "Whether to enable the depth-recorder service.";
 
-      output-path = lib.mkOption {
+      output-folder = lib.mkOption {
         type = lib.types.str;
         default = "depth";
         description = "The folder to save recordings to within the deployment directory.";
