@@ -32,7 +32,7 @@ in {
         #!/usr/bin/env bash
         set -x
         # DEPLOYMENT_DIRECTORY is set by the deployment-start service
-        OUTPUT_PATH=$DEPLOYMENT_DIRECTORY/${config.services.audio-recorder.output-folder}
+        OUTPUT_PATH=$DEPLOYMENT_DIRECTORY/${config.services.depth-recorder.output-folder}
         ${pkgs.coreutils}/bin/mkdir -p $OUTPUT_PATH
         RUST_LOG=info ${depthRecorder}/bin/depth-recorder \
         $OUTPUT_PATH \
