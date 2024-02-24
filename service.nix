@@ -10,10 +10,10 @@ in {
     services.depth-recorder = {
       enable = lib.mkEnableOption "Whether to enable the depth-recorder service.";
 
-      output-path = lib.mkOption {
+      output-folder = lib.mkOption {
         type = lib.types.str;
-        default = "/output/depth";
-        description = "The folder to save recordings to.";
+        default = "depth";
+        description = "The folder to save recordings to within the deployment directory.";
       };
 
       interval-secs = lib.mkOption {
@@ -31,9 +31,11 @@ in {
       script = ''
         #!/usr/bin/env bash
         set -x
-        ${pkgs.coreutils}/bin/mkdir -p ${config.services.depth-recorder.output-path}
+        # DEPLOYMENT_DIRECTORY is set by the deployment-start service
+        OUTPUT_PATH=$DEPLOYMENT_DIRECTORY/${config.services.depth-recorder.output-folder}
+        ${pkgs.coreutils}/bin/mkdir -p $OUTPUT_PATH
         RUST_LOG=info ${depthRecorder}/bin/depth-recorder \
-        ${config.services.depth-recorder.output-path} \
+        $OUTPUT_PATH \
         ${toString config.services.depth-recorder.interval-secs}
       '';
       serviceConfig = {
@@ -41,7 +43,7 @@ in {
         Restart = "always";
       };
       unitConfig = {
-        After = "multi-user.target";
+        After = ["multi-user.target" "deployment-start.service"];
       };
       startLimitIntervalSec = 0;
     };
